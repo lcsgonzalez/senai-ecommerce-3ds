@@ -18,4 +18,9 @@ public class Categoria {
     private Long id;
     private String nome;
     private String descricao;
+
+    public Categoria(DadosCadastroCategoria dados) {
+        this.nome = dados.nome();
+        this.descricao = dados.descricao();
+    }
 }
