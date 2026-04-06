@@ -1,10 +1,11 @@
 package br.com.senai.api_ecommerce.controller;
 
-import br.com.senai.api_ecommerce.categoria.Categoria;
-import br.com.senai.api_ecommerce.categoria.CategoriaRepository;
-import br.com.senai.api_ecommerce.categoria.DadosCadastroCategoria;
+import br.com.senai.api_ecommerce.categoria.*;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -24,7 +25,29 @@ public class CategoriaController {
     }
 
     @GetMapping
-    public List<Categoria> listarCategorias(){
-        return repository.findAll();
+    public Page<DadosListagemCategoria> listarCategorias(@PageableDefault(size = 10, sort = {"nome"}) Pageable paginacao){
+        return repository.findAllByAtivoTrue(paginacao)
+                .map(DadosListagemCategoria::new);
     }
+
+    @PutMapping
+    @Transactional
+    public void atualizarCategoria(@RequestBody @Valid DadosAtualizarCategoria dados){
+        var categoria = repository.getReferenceById(dados.id());
+        categoria.atualizarCategoria(dados);
+    }
+
+//    @DeleteMapping("/{id}")
+//    @Transactional
+//    public void deletarCategoria(@PathVariable Long id){
+//        repository.deleteById(id);
+//    }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    public void deletarCategoria(@PathVariable Long id){
+        var categoria = repository.getReferenceById(id);
+        categoria.excluirCategoria();
+    }
+
 }
