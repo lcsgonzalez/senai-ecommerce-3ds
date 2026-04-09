@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("categorias")
@@ -50,4 +50,13 @@ public class CategoriaController {
         categoria.excluirCategoria();
     }
 
+    @GetMapping("/{id}")
+    public DadosDetalhamentoCategoria detalharCategoria(@PathVariable Long id){
+        Categoria categoria = repository.findByIdAndAtivoTrue(id)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Categoria não existe"
+                ));
+        return new DadosDetalhamentoCategoria(categoria);
+    }
 }
