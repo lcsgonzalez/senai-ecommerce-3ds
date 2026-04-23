@@ -6,13 +6,13 @@ import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
 @Table(name = "clientes")
 @Entity(name = "Cliente")
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(of = "id")
-
 public class Cliente {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +43,8 @@ public class Cliente {
             this.email = dados.email();
         if(dados.telefone() !=null && !dados.telefone().isBlank())
             this.telefone = dados.telefone();
+        if(dados.endereco() != null)
+            this.endereco.atualizarEndereco(dados.endereco());
     }
 
     public void excluirCliente(){
