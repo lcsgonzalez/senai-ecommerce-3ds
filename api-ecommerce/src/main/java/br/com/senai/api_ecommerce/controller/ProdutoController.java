@@ -3,7 +3,16 @@ package br.com.senai.api_ecommerce.controller;
 import br.com.senai.api_ecommerce.categoria.Categoria;
 import br.com.senai.api_ecommerce.categoria.CategoriaRepository;
 import br.com.senai.api_ecommerce.produto.*;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -14,8 +23,24 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+//Adicionar a dependência: SpringDoc OpenAPI no pom.xml e atualizar as dependências do Maven
+//
+//Executar o projeto e checar se a documentação foi gerada, acessando:
+//http://localhost:8080/swagger-ui/index.html
+//
+//Para personalizar essa rota, você pode editar o arquivo application.properties e adicionar a seguinte configuração:
+//springdoc.swagger-ui.path=seucaminhoaqui
+
 @RestController
 @RequestMapping("produtos")
+@Tag(name="Produtos",description="Gerenciamento dos produtos do ecommerce")
+@OpenAPIDefinition(tags ={
+        @Tag(name = "Criar Produto",description = "Criar"),
+        @Tag(name = "Listar todos os produtos",description = "Listar todos"),
+        @Tag(name = "Listar Produto por ID",description = "Listar por ID"),
+        @Tag(name = "Excluir Produto",description = "Excluir"),
+        @Tag(name = "Atualizar Produto",description = "Atualizar")
+})
 public class ProdutoController {
 
     @Autowired
@@ -24,12 +49,39 @@ public class ProdutoController {
     @Autowired
     private ProdutoRepository produtoRepository;
 
+
     @PostMapping
     @Transactional
-    public ResponseEntity<DadosDetalhamentoProduto> cadastrarProduto(@RequestBody @Valid DadosCadastroProduto dados){
+    @Operation(summary = "Criar um novo produto")
+    @Tag(name="Criar Produto", description = "Salva os dados do produto no BD")
+    @ApiResponses( value = {
+            @ApiResponse(responseCode = "201", description = "Produto criado com sucesso",
+                    content = {
+                            @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = DadosDetalhamentoProduto.class))
+                    }),
+            @ApiResponse(responseCode = "409", description = "SKU já cadastrado", content = @Content),
+            @ApiResponse(responseCode = "404", description = "Categoria inválida", content = @Content)
+    })
+    public ResponseEntity<DadosDetalhamentoProduto> cadastrarProduto(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DadosCadastroProduto.class),
+                            examples = @ExampleObject(
+                                    value = "{ \"nome\": \"Nome Produto\",\t\n" +
+                                            "\t\"preco\": 21.00,\n" +
+                                            "\t\"sku\":\"999999999\",\n" +
+                                            "\t\"descricao\": \"Descrição do produto\",\n" +
+                                            "\t\"estoque\": 1,\n" +
+                                            "\t\"categoriaId\": 6}"
+                            )
+                    )
+            )
+            @RequestBody @Valid DadosCadastroProduto dados){
         //1. Verificar se a categoria existe
         var categoria = categoriaRepository.findByIdAndAtivoTrue(dados.categoriaId())
-                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Categoria não encontrada"));
+                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND,"Categoria inválida"));
         //2. Verificar se SKU é único
         if(produtoRepository.existsBySkuAndAtivoTrue(dados.sku()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "SKU já cadastrado no sistema");
@@ -42,7 +94,8 @@ public class ProdutoController {
     }
 
     @GetMapping
-    public ResponseEntity<Page<DadosListagemProduto>> listarProdutos(@PageableDefault(size=10, sort={"nome"}) Pageable paginacao){
+    @Tag(name = "Listar todos os produtos")
+    public ResponseEntity<Page<DadosListagemProduto>> listarProdutos(@PageableDefault(size=10, sort={"nome"}) @ParameterObject Pageable paginacao){
         var page = produtoRepository.findAllByAtivoTrue(paginacao)
                 .map(DadosListagemProduto::new);
 
@@ -50,6 +103,7 @@ public class ProdutoController {
     }
 
     @GetMapping("/{id}")
+    @Tag(name = "Listar Produto por ID")
     public ResponseEntity<DadosDetalhamentoProduto> buscarProdutoPorId(@PathVariable Long id){
         var produto = produtoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
@@ -58,6 +112,8 @@ public class ProdutoController {
 
     @DeleteMapping("/{id}")
     @Transactional
+    @Tag(name = "Excluir Produto")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public ResponseEntity excluirProduto(@PathVariable Long id){
         var produto = produtoRepository.findByIdAndAtivoTrue(id)
                 .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Produto não encontrado"));
@@ -68,6 +124,7 @@ public class ProdutoController {
 
     @PutMapping
     @Transactional
+    @Tag(name = "Atualizar Produto")
     public ResponseEntity<DadosDetalhamentoProduto> atualizarProduto(
             @RequestBody @Valid DadosAtualizarProduto dados
     ){
