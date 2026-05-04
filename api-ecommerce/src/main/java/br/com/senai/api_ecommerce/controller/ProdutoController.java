@@ -2,6 +2,7 @@ package br.com.senai.api_ecommerce.controller;
 
 import br.com.senai.api_ecommerce.categoria.Categoria;
 import br.com.senai.api_ecommerce.categoria.CategoriaRepository;
+import br.com.senai.api_ecommerce.exceptions.ErroResponse;
 import br.com.senai.api_ecommerce.produto.*;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
@@ -125,6 +126,36 @@ public class ProdutoController {
     @PutMapping
     @Transactional
     @Tag(name = "Atualizar Produto")
+    @ApiResponses( value = {
+            @ApiResponse(responseCode = "200", description = "Produto atualizado com sucesso",
+                    content = {
+                            @Content(mediaType = "application/json",
+                                    schema = @Schema(implementation = DadosDetalhamentoProduto.class))
+                    }),
+            @ApiResponse(responseCode = "409", description = "SKU já cadastrado", content = @Content),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Recurso não encontrado",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErroResponse.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "Categoria inválida",
+                                            value = """
+                    {"codigo": "CATEGORIA_NAO_ENCONTRADA", "mensagem": "Categoria inválida"}
+                    """
+                                    ),
+                                    @ExampleObject(
+                                            name = "Produto inválido",
+                                            value = """
+                    {"codigo": "PRODUTO_NAO_ENCONTRADO", "mensagem": "Produto inválido"}
+                    """
+                                    )
+                            }
+                    )
+            )
+    })
     public ResponseEntity<DadosDetalhamentoProduto> atualizarProduto(
             @RequestBody @Valid DadosAtualizarProduto dados
     ){
